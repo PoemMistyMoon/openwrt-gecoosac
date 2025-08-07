@@ -11,32 +11,42 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Set up OpenWRT build environment
+    - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y build-essential ccache libssl-dev libncurses5-dev zlib1g-dev gawk flex git
+        sudo apt install -y build-essential ccache libssl-dev libncurses5-dev zlib1g-dev gawk flex git subversion
+
+    - name: Clone OpenWRT source
+      run: |
         git clone https://github.com/openwrt/openwrt.git
         cd openwrt
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-    - name: Clone gecoosac package
+    - name: Add gecoosac package
+      run: |
+        cd openwrt/package
+        git clone https://github.com/lwb1978/openwrt-gecoosac.git
+
+    - name: Enable luci-app-gecoosac package in config
       run: |
         cd openwrt
-        git clone https://github.com/lwb1978/openwrt-gecoosac package/openwrt-gecoosac
+        echo "CONFIG_PACKAGE_luci-app-gecoosac=y" >> .config
+        make defconfig
 
-    - name: Configure build
-      run: |
-        cd openwrt
-        make menuconfig
-        # 在此处自动化选择 luci-app-gecoosac，或使用 defconfig 文件
-
-    - name: Build package
+    - name: Build luci-app-gecoosac package only
       run: |
         cd openwrt
         make package/luci-app-gecoosac/compile V=s
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: gecoosac-ipk
+        path: openwrt/bin/packages/**/luci-app-gecoosac*.ipk
