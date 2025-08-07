@@ -51,27 +51,4 @@ jobs:
       with:
         name: luci-app-gecoosac
         path: |
-          openwrt/bin/packages/**/luci-app-gecoosac_*.ipk          curl
-
-    - name: Prepare OpenWrt build environment
-      run: |
-        cd openwrt
-        # 使用默认配置，或者你可以用你自己的 defconfig
-        make defconfig
-
-        # 关键步骤：准备所有编译工具和host依赖
-        make prepare
-        make tools/install
-        make tools/compile
-
-    - name: Compile luci-app-gecoosac package
-      run: |
-        cd openwrt
-        # 编译指定包，加上 V=s 输出详细日志方便排查
-        make package/luci-app-gecoosac/compile V=s
-
-    - name: Upload compiled ipk artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: luci-app-gecoosac-ipk
-        path: openwrt/bin/packages/**/luci-app-gecoosac*.ipk
+          openwrt/bin/packages/**/luci-app-gecoosac_*.ipk
