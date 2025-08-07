@@ -1,52 +1,60 @@
-name: Build luci-app-gecoosac
+name: Build OpenWrt luci-app-gecoosac
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    env:
+      TZ: Asia/Shanghai
 
     steps:
-    - name: Checkout repository
+    - name: Checkout repo
       uses: actions/checkout@v3
 
-    - name: Install dependencies
+    - name: Install build dependencies
       run: |
-        sudo apt update
-        sudo apt install -y build-essential ccache libssl-dev libncurses5-dev zlib1g-dev gawk flex git subversion
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          libncurses5-dev \
+          zlib1g-dev \
+          gawk \
+          git \
+          ccache \
+          gettext \
+          libssl-dev \
+          xsltproc \
+          wget \
+          unzip \
+          python3 \
+          python3-distutils \
+          file \
+          curl
 
-    - name: Clone OpenWRT source
+    - name: Prepare OpenWrt build environment
       run: |
-        git clone https://github.com/openwrt/openwrt.git
         cd openwrt
-        ./scripts/feeds update -a
-        ./scripts/feeds install -a
-
-    - name: Add gecoosac package
-      run: |
-        cd openwrt/package
-        git clone https://github.com/lwb1978/openwrt-gecoosac.git
-
-    - name: Enable luci-app-gecoosac package in config
-      run: |
-        cd openwrt
-        echo "CONFIG_PACKAGE_luci-app-gecoosac=y" >> .config
+        # 使用默认配置，或者你可以用你自己的 defconfig
         make defconfig
 
-    - name: Build luci-app-gecoosac package only
+        # 关键步骤：准备所有编译工具和host依赖
+        make prepare
+        make tools/install
+        make tools/compile
+
+    - name: Compile luci-app-gecoosac package
       run: |
         cd openwrt
+        # 编译指定包，加上 V=s 输出详细日志方便排查
         make package/luci-app-gecoosac/compile V=s
 
-    - name: Upload build artifacts
+    - name: Upload compiled ipk artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: gecoosac-ipk
+        name: luci-app-gecoosac-ipk
         path: openwrt/bin/packages/**/luci-app-gecoosac*.ipk
