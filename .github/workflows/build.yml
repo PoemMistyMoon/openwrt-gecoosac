@@ -1,0 +1,42 @@
+name: Build luci-app-gecoosac
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up OpenWRT build environment
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential ccache libssl-dev libncurses5-dev zlib1g-dev gawk flex git
+        git clone https://github.com/openwrt/openwrt.git
+        cd openwrt
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Clone gecoosac package
+      run: |
+        cd openwrt
+        git clone https://github.com/lwb1978/openwrt-gecoosac package/openwrt-gecoosac
+
+    - name: Configure build
+      run: |
+        cd openwrt
+        make menuconfig
+        # 在此处自动化选择 luci-app-gecoosac，或使用 defconfig 文件
+
+    - name: Build package
+      run: |
+        cd openwrt
+        make package/luci-app-gecoosac/compile V=s
